@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Login</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        input { padding: 12px; width: 85%; margin: 15px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button { background-color: #007bff; color: white; border: none; padding: 12px; width: 100%; font-size: 16px; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #status { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2 style="color: #333;">Identity Verification</h2>
+        <p>Enter ID & Look at Camera</p>
+        <input type="text" id="username" placeholder="Student Name">
+        <button onclick="login()">Verify & Login</button>
+        <div id="status"></div>
+        <a href="/register_page" style="display:block; margin-top:15px; font-size:12px;">New Student? Register here</a>
+    </div>
+
+    <script>
+        function login() {
+            const user = document.getElementById('username').value;
+            if(!user) { alert("Enter Name"); return; }
+            
+            const status = document.getElementById('status');
+            status.innerText = "Verifying Identity...";
+            status.style.color = "blue";
+
+            const formData = new FormData();
+            formData.append('username', user);
+
+            fetch('/login', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    status.innerText = "Verified! Redirecting...";
+                    status.style.color = "green";
+                    setTimeout(() => window.location.href = data.redirect, 1000);
+                } else {
+                    status.innerText = data.message;
+                    status.style.color = "red";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

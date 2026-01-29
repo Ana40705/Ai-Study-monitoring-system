@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: #121212; color: white; }
+        
+        .warning-banner { background: #ff9800; color: #000; padding: 10px; text-align: center; border-radius: 5px; margin-bottom: 20px; font-weight: bold; }
+
+        .container { display: flex; gap: 20px; height: 85vh; }
+        
+        /* LEFT: VIDEO */
+        .video-section { flex: 2; display: flex; flex-direction: column; position: relative; }
+        .video-feed { border: 2px solid #333; border-radius: 12px; width: 100%; height: 100%; object-fit: cover; background: black; }
+        
+        /* RIGHT: HUD */
+        .stats-panel { flex: 1; background: #1e1e1e; padding: 25px; border-radius: 12px; display: flex; flex-direction: column; gap: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.5); }
+        
+        .stat-card { background: #2d2d2d; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #333; }
+        .score-big { font-size: 56px; font-weight: bold; color: #00e676; text-shadow: 0 0 10px rgba(0,230,118,0.3); }
+        .status-text { font-size: 24px; font-weight: bold; margin-top: 5px; letter-spacing: 1px; }
+        
+        /* LIVE WAVEFORM GRAPH */
+        .chart-wrapper { flex-grow: 1; background: #252525; border-radius: 8px; padding: 10px; border: 1px solid #333; }
+        
+        .end-btn { background: #d32f2f; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; margin-top: auto; transition: 0.2s; }
+        .end-btn:hover { background: #b71c1c; }
+
+        .red-alert { background-color: #b71c1c !important; animation: shake 0.5s infinite; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, 1px); } }
+    </style>
+</head>
+<body>
+    
+    <div class="warning-banner">
+        ⚠️ ENVIRONMENT CHECK: Ensure good lighting. Do not cover your face.
+    </div>
+
+    <div class="container">
+        <div class="video-section">
+            <img src="/video_feed" class="video-feed">
+        </div>
+
+        <div class="stats-panel">
+            <h2 style="margin: 0; color: #aaa; font-size: 14px;">SESSION ACTIVE • {{ user }}</h2>
+            
+            <div class="stat-card">
+                <div style="color: #888; font-size: 12px;">REAL-TIME FOCUS</div>
+                <div class="score-big" id="score">100%</div>
+            </div>
+
+            <div class="stat-card" id="status-box">
+                <div class="status-text" id="status-text">ACTIVE</div>
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="liveChart"></canvas>
+            </div>
+
+            <button class="end-btn" onclick="endSession()">STOP SESSION</button>
+        </div>
+    </div>
+
+    <script>
+        // --- LIVE GRAPH SETUP ---
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        const liveChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(20).fill(''), // Empty labels for clean look
+                datasets: [{
+                    label: 'Focus Level',
+                    data: Array(20).fill(100), // Start at 100
+                    borderColor: '#00e676',
+                    backgroundColor: 'rgba(0, 230, 118, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4, // Smooth curves
+                    fill: true,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false, // Disable animation for instant updates
+                scales: {
+                    y: { min: 0, max: 100, grid: { color: '#333' } },
+                    x: { display: false }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        function updateGraph(newScore) {
+            const data = liveChart.data.datasets[0].data;
+            data.shift(); // Remove oldest
+            data.push(newScore); // Add newest
+            liveChart.update();
+        }
+
+        // --- MAIN LOOP ---
+        setInterval(() => {
+            fetch('/status')
+            .then(res => res.json())
+            .then(data => {
+                // Update Numbers
+                document.getElementById('score').innerText = data.focus_score + "%";
+                const statusBox = document.getElementById('status-box');
+                const statusText = document.getElementById('status-text');
+
+                // Visual Alert Logic
+                if (data.distracted) {
+                    statusBox.classList.add("red-alert");
+                    statusText.innerText = data.status_text.toUpperCase();
+                    // Change graph color to red
+                    liveChart.data.datasets[0].borderColor = '#ff1744';
+                } else {
+                    statusBox.classList.remove("red-alert");
+                    statusText.innerText = "FOCUSED";
+                    // Change graph color back to green
+                    liveChart.data.datasets[0].borderColor = '#00e676';
+                }
+
+                // Update Live Graph
+                updateGraph(data.focus_score);
+            })
+            .catch(e => console.log("Connecting..."));
+        }, 1000);
+
+        function endSession() {
+            if(confirm("End Session?")) {
+                fetch('/stop_session', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => window.location.href = "/report");
+            }
+        }
+    </script>
+</body>
+</html>

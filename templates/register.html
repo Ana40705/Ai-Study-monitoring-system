@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Registration</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #222; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #333; padding: 30px; border-radius: 12px; width: 400px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        
+        .camera-circle { width: 120px; height: 120px; background: #000; border-radius: 50%; margin: 0 auto 20px; overflow: hidden; border: 3px solid #28a745; }
+        .camera-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+        input { width: 90%; padding: 12px; margin: 8px 0; border-radius: 5px; border: none; background: #444; color: white; }
+        input::placeholder { color: #aaa; }
+        
+        button { background: #28a745; color: white; border: none; padding: 12px; width: 100%; font-size: 16px; border-radius: 5px; cursor: pointer; margin-top: 15px; font-weight: bold; }
+        button:hover { background: #218838; }
+        .link { margin-top: 15px; display: block; color: #aaa; font-size: 14px; }
+        #msg { margin-top: 10px; font-weight: bold; min-height: 20px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>New Student Registration</h2>
+        
+        <div class="camera-circle"><img src="/video_feed"></div>
+        
+        <input type="text" id="username" placeholder="Full Name (Required)">
+        <input type="text" id="student_id" placeholder="Student ID (e.g., CS-101)">
+        <input type="email" id="email" placeholder="Email Address">
+        
+        <button onclick="register()">Capture Face & Save</button>
+        <div id="msg"></div>
+        <a href="/" class="link">Back to Login</a>
+    </div>
+
+    <script>
+        function register() {
+            const user = document.getElementById('username').value;
+            const sid = document.getElementById('student_id').value;
+            const email = document.getElementById('email').value;
+
+            if(!user || !sid) { document.getElementById('msg').innerText = "Name and ID are required!"; return; }
+            
+            document.getElementById('msg').innerText = "Scanning face...";
+            document.getElementById('msg').style.color = "yellow";
+
+            const formData = new FormData();
+            formData.append('username', user);
+            formData.append('student_id', sid);
+            formData.append('email', email);
+
+            fetch('/register', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                const msgBox = document.getElementById('msg');
+                msgBox.innerText = data.message;
+                msgBox.style.color = data.status === "success" ? "#0f0" : "#f00";
+                if(data.status === "success") {
+                    setTimeout(() => window.location.href = "/", 2000);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
