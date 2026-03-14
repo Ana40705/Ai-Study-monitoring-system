@@ -1,0 +1,5 @@
+Flask==3.0.0
+opencv-python==4.8.1.78
+ultralytics==8.0.200
+mediapipe==0.10.7
+numpy==1.26.0
